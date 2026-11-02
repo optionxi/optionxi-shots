@@ -2,14 +2,51 @@ import Phone from "./Phone";
 import { DARK_SCREENS, SCREENS } from "./screens";
 import { CANVAS, DEFAULT_FRAME, type Callout, type PhoneItem, type Scene as SceneT } from "@/scenes";
 
-function PhoneView({ p }: { p: PhoneItem }) {
+type PickHandler = (phoneIndex: number, file: File) => void;
+
+function PhoneView({
+  p,
+  override,
+  onPick,
+}: {
+  p: PhoneItem;
+  override?: string;
+  onPick?: (file: File) => void;
+}) {
   const key = p.screen ?? "placeholder";
   const Body = SCREENS[key];
+  const width = p.width;
+  const height = (width / 414) * 868; // PHONE_W x PHONE_H ratio
+
   return (
     <div className="absolute" style={{ left: p.x, top: p.y, transform: `rotate(${p.rotate ?? 0}deg)` }}>
-      <Phone width={p.width} frame={p.frame ?? DEFAULT_FRAME} image={p.image} lightStatus={DARK_SCREENS.includes(key)}>
-        <Body />
-      </Phone>
+      <div className="relative" style={{ width, height }}>
+        <Phone width={width} frame={p.frame ?? DEFAULT_FRAME} image={override ?? p.image} lightStatus={DARK_SCREENS.includes(key)}>
+          <Body />
+        </Phone>
+
+        {/* click-to-upload overlay (stripped from the exported PNG) */}
+        {onPick && (
+          <label
+            data-no-export
+            className="group absolute inset-0 z-50 flex cursor-pointer items-center justify-center rounded-[60px] transition hover:bg-black/45"
+          >
+            <span className="rounded-full bg-white px-[36px] py-[20px] text-[40px] font-bold text-black opacity-0 transition group-hover:opacity-100">
+              Click to replace
+            </span>
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) onPick(f);
+                e.target.value = ""; // allow re-picking the same file
+              }}
+            />
+          </label>
+        )}
+      </div>
     </div>
   );
 }
@@ -53,7 +90,16 @@ function CalloutView({ c }: { c: Callout }) {
   );
 }
 
-export default function Scene({ scene }: { scene: SceneT }) {
+export default function Scene({
+  scene,
+  images,
+  onPick,
+}: {
+  scene: SceneT;
+  /** uploaded overrides, keyed by phone index */
+  images?: Record<number, string>;
+  onPick?: PickHandler;
+}) {
   const center = scene.textAlign === "center";
   return (
     <div className="relative overflow-hidden" style={{ width: CANVAS.width, height: CANVAS.height, background: scene.background, color: scene.textColor }}>
@@ -67,7 +113,7 @@ export default function Scene({ scene }: { scene: SceneT }) {
       </div>
 
       {scene.phones.map((p, i) => (
-        <PhoneView key={i} p={p} />
+        <PhoneView key={i} p={p} override={images?.[i]} onPick={onPick ? (f) => onPick(i, f) : undefined} />
       ))}
       {scene.callouts?.map((c, i) => (
         <CalloutView key={i} c={c} />

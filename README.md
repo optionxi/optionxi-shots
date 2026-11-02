@@ -111,7 +111,3 @@ Helpers: `cx(width)` returns the x that horizontally centers an element of that 
 
 - Google Play displays up to **8** phone screenshots, so the first 8 scenes in `SCENES` are the ones to upload. The rest are extras.
 - Output size is 1080 × 1920 (9:16), which is accepted for phone screenshots.
-
-## License
-
-Add your license here.

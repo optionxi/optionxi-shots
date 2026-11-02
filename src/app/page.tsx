@@ -6,6 +6,7 @@ import JSZip from "jszip";
 import Scene from "@/components/Scene";
 import { CANVAS, SCENES } from "@/scenes";
 
+
 function saveBlob(blob: Blob, name: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -16,6 +17,14 @@ function saveBlob(blob: Blob, name: string) {
 }
 
 export default function Page() {
+  const [custom, setCustom] = useState<Record<string, string>>({}); // "sceneFile:phoneIdx" -> dataURL
+
+  function pickImage(sceneFile: string, phoneIdx: number, file: File) {
+    const reader = new FileReader();
+    reader.onload = () => setCustom((c) => ({ ...c, [`${sceneFile}:${phoneIdx}`]: String(reader.result) }));
+    reader.readAsDataURL(file);
+  }
+
   const [scale, setScale] = useState(0.3);
   const [busy, setBusy] = useState<string | null>(null);
   const nodes = useRef<(HTMLDivElement | null)[]>([]);
@@ -30,8 +39,16 @@ export default function Page() {
 
   async function render(i: number): Promise<string> {
     const node = nodes.current[i];
+    
     if (!node) throw new Error("scene not mounted");
-    const opts = { width: CANVAS.width, height: CANVAS.height, pixelRatio: 1, cacheBust: true, style: { transform: "none" } };
+    const opts = {
+      width: CANVAS.width,
+      height: CANVAS.height,
+      pixelRatio: 1,
+      cacheBust: true,
+      style: { transform: "none" },
+      filter: (n: HTMLElement) => !(n instanceof HTMLElement && n.hasAttribute("data-no-export")),
+    };
     await toPng(node, opts); // warm-up pass so fonts and images get embedded
     return toPng(node, opts);
   }
@@ -91,7 +108,13 @@ export default function Page() {
                 }}
                 style={{ width: CANVAS.width, height: CANVAS.height, transform: `scale(${scale})`, transformOrigin: "top left" }}
               >
-                <Scene scene={s} />
+                <Scene
+                  scene={s}
+                  images={Object.fromEntries(
+                    s.phones.map((_, pi) => [pi, custom[`${s.file}:${pi}`]]).filter(([, v]) => v)
+                  )}
+                  onPick={(pi, file) => pickImage(s.file, pi, file)}
+                />
               </div>
             </div>
             <div className="mt-4 flex items-center justify-between">
