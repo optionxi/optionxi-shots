@@ -39,18 +39,24 @@ export default function Page() {
 
   async function render(i: number): Promise<string> {
     const node = nodes.current[i];
-    
     if (!node) throw new Error("scene not mounted");
+
     const opts = {
       width: CANVAS.width,
       height: CANVAS.height,
       pixelRatio: 1,
       cacheBust: true,
       style: { transform: "none" },
-      filter: (n: HTMLElement) => !(n instanceof HTMLElement && n.hasAttribute("data-no-export")),
+      filter: (n: Node) => !(n instanceof HTMLElement && n.dataset.noExport !== undefined),
     };
-    await toPng(node, opts); // warm-up pass so fonts and images get embedded
-    return toPng(node, opts);
+
+    try {
+      await toPng(node, opts); // warm-up pass so fonts and images get embedded
+      return await toPng(node, opts);
+    } catch (err) {
+      console.error("Export failed:", err instanceof Event ? `image failed to load (${(err.target as HTMLImageElement | null)?.src?.slice(0, 60)}…)` : err);
+      throw err;
+    }
   }
 
   async function downloadOne(i: number) {
