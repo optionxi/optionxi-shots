@@ -79,7 +79,7 @@ export type Scene = {
 const practice: Scene = {
   file: "01-practice-trading",
   background: "#6A2BF2",
-  textColor: "#0B0B10",
+  textColor: "#FFFFFF",
   headline: "Practice trading,\nrisk-free.",
   subline: "₹3,00,000 virtual cash, daily.",
   phones: [{ image: "/shots/home.png", x: cx(780), y: 660, width: 780 }],
